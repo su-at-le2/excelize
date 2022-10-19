@@ -279,20 +279,20 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 	}
 	col--
 	row--
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
+	//colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
 	content, cNvPrID := f.drawingParser(drawingXML)
 	twoCellAnchor := xdrCellAnchor{}
 	twoCellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
-	from.Col = colStart
+	from.Col = col
 	from.ColOff = opts.OffsetX * EMU
-	from.Row = rowStart
+	from.Row = row
 	from.RowOff = opts.OffsetY * EMU
 	to := xlsxTo{}
-	to.Col = colEnd
-	to.ColOff = x2 * EMU
-	to.Row = rowEnd
-	to.RowOff = y2 * EMU
+	to.Col = col
+	to.ColOff = width * EMU
+	to.Row = row
+	to.RowOff = height * EMU
 	twoCellAnchor.From = &from
 	twoCellAnchor.To = &to
 	pic := xlsxPic{}
