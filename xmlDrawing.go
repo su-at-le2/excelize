@@ -536,6 +536,8 @@ type pictureOptions struct {
 	Hyperlink        string  `json:"hyperlink"`
 	HyperlinkType    string  `json:"hyperlink_type"`
 	Positioning      string  `json:"positioning"`
+	Width            float64 `json:"width"`
+	Height           float64 `json:"height"`
 }
 
 // shapeOptions directly maps the format settings of the shape.

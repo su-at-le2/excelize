@@ -17,6 +17,7 @@ import (
 	"encoding/xml"
 	"image"
 	"io"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,6 +32,8 @@ func parsePictureOptions(opts string) (*pictureOptions, error) {
 		FPrintsWithSheet: true,
 		XScale:           1,
 		YScale:           1,
+		Width:            0,
+		Height:           0,
 	}
 	err := json.Unmarshal(fallbackOptions(opts), &format)
 	return &format, err
@@ -272,6 +275,20 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 		width, height, col, row, err = f.drawingResize(sheet, cell, float64(width), float64(height), opts)
 		if err != nil {
 			return err
+		}
+	} else if opts.Height > 0 || opts.Width > 0 {
+		toPx := 96 / 25.4
+		if opts.Height > 0 && opts.Width > 0 {
+			width = int(math.Ceil(opts.Width * toPx))
+			height = int(math.Ceil(opts.Height * toPx))
+		} else if opts.Width > 0 && opts.Height == 0 {
+			w := math.Ceil(opts.Width * toPx)
+			height = int(float64(height) * (w / float64(width)))
+			width = int(w)
+		} else if opts.Height > 0 && opts.Width == 0 {
+			h := math.Ceil(opts.Height * toPx)
+			width = int(float64(width) * (h / float64(height)))
+			height = int(h)
 		}
 	} else {
 		width = int(float64(width) * opts.XScale)
