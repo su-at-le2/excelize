@@ -290,11 +290,6 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, file string, width, he
 			width = int(float64(width) * (h / float64(height)))
 			height = int(h)
 		}
-		width = int(math.Floor(float64(width) * 0.913693998032142))
-		
-		if opts.Width == opts.Height {
-			height = int(math.Floor(float64(height) * 0.913693998032142))
-		}
 	} else {
 		width = int(float64(width) * opts.XScale)
 		height = int(float64(height) * opts.YScale)
