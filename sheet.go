@@ -535,6 +535,57 @@ func (f *File) DeleteSheet(sheet string) {
 	f.SetActiveSheet(f.GetSheetIndex(activeSheetName))
 }
 
+
+// DeleteSheet2 DeleteSheet provides a function to delete worksheet in a workbook by given
+// worksheet name. Use this method with caution, which will affect changes in
+// references such as formulas, charts, and so on. If there is any referenced
+// value of the deleted worksheet, it will cause a file error when you open
+// it. This function will be invalid when only one worksheet is left.
+func (f *File) DeleteSheet2(sheets map[string]string,wb *xlsxWorkbook) {
+	if wb == nil {
+		wb = f.workbookReader()
+	}
+	wbRels := f.relsReader(f.getWorkbookRelsPath())
+	for {
+		if len(sheets) == 0 {
+			break
+		}
+		for idx, v := range wb.Sheets.Sheet {
+			if _, ok := sheets[v.Name]; !ok {
+				continue
+			}
+			deleteAndAdjustDefinedNames(wb, idx)
+			wb.Sheets.Sheet = append(wb.Sheets.Sheet[:idx], wb.Sheets.Sheet[idx+1:]...)
+			var sheetXML, rels string
+			if wbRels != nil {
+				for _, rel := range wbRels.Relationships {
+					if rel.ID == v.ID {
+						sheetXML = f.getWorksheetPath(rel.Target)
+						sheetXMLPath, _ := f.getSheetXMLPath(v.Name)
+						rels = "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+					}
+				}
+			}
+			target := f.deleteSheetFromWorkbookRels(v.ID)
+			f.deleteSheetFromContentTypes(target)
+			f.deleteCalcChain(v.SheetID, "")
+			delete(f.sheetMap, v.Name)
+			f.Pkg.Delete(sheetXML)
+			f.Pkg.Delete(rels)
+			f.Relationships.Delete(rels)
+			f.Sheet.Delete(sheetXML)
+			delete(f.xmlAttr, sheetXML)
+		}
+		sheets2 := make(map[string]string, 0)
+		for _, v := range wb.Sheets.Sheet {
+			if _, ok := sheets[v.Name]; ok {
+				sheets2[v.Name] = v.Name
+			}
+		}
+		sheets = sheets2
+	}
+}
+
 // deleteAndAdjustDefinedNames delete and adjust defined name in the workbook
 // by given worksheet ID.
 func deleteAndAdjustDefinedNames(wb *xlsxWorkbook, deleteLocalSheetID int) {
@@ -1464,6 +1515,34 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 				return ErrDefinedNameDuplicate
 			}
 		}
+		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
+		return nil
+	}
+	wb.DefinedNames = &xlsxDefinedNames{
+		DefinedName: []xlsxDefinedName{d},
+	}
+	return nil
+}
+
+func (f *File) SetDefinedName2(definedName *DefinedName, wb *xlsxWorkbook) error {
+	if wb == nil {
+		wb = f.workbookReader()
+	}
+
+	d := xlsxDefinedName{
+		Name:         definedName.Name,
+		Comment:      definedName.Comment,
+		Data:         definedName.RefersTo,
+		LocalSheetID: &definedName.SheetId,
+	}
+
+	if definedName.Scope != "" && definedName.SheetId == 0 {
+		if sheetIndex := f.GetSheetIndex(definedName.Scope); sheetIndex >= 0 {
+			d.LocalSheetID = &sheetIndex
+		}
+	}
+
+	if wb.DefinedNames != nil {
 		wb.DefinedNames.DefinedName = append(wb.DefinedNames.DefinedName, d)
 		return nil
 	}

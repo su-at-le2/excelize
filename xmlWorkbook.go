@@ -312,6 +312,7 @@ type DefinedName struct {
 	Comment  string `json:"comment,omitempty"`
 	RefersTo string `json:"refers_to,omitempty"`
 	Scope    string `json:"scope,omitempty"`
+	SheetId  int    `json:"SheetId,omitempty"`
 }
 
 // WorkbookPropsOptions directly maps the settings of workbook proprieties.
